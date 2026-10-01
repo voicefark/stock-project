@@ -1,5 +1,4 @@
 import requests
-import sys
 url = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
 response = requests.get(url)
 def get_stock(name):
