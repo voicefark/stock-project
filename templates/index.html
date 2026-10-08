@@ -1,12 +1,35 @@
+<!--2026/10/8更新：加入查詢功能-->
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>股票分析網站</title>
+    <title>股票查詢</title>
 </head>
 
 <body>
-    <h1>股票分析網站</h1>
-    <p>歡迎來到我的股票分析網站！</p>
+
+    <h1>股票查詢</h1>
+
+    <form action="/stock" method="get">
+
+        <label>股票代號：</label>
+        <input type="text" name="stock">
+
+        <br><br>
+
+        <label>年份：</label>
+        <input type="text" name="year">
+
+        <br><br>
+
+        <label>月份：</label>
+        <input type="text" name="month">
+
+        <br><br>
+
+        <button type="submit">查詢</button>
+
+    </form>
+
 </body>
 </html>
