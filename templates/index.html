@@ -1,35 +1,144 @@
-<!--2026/10/8更新：加入查詢功能-->
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <title>股票查詢</title>
 </head>
-
 <body>
-
-    <h1>股票查詢</h1>
+    <h1>股票查詢網站</h1>
 
     <form action="/stock" method="get">
-
         <label>股票代號：</label>
-        <input type="text" name="stock">
+        <input type="text" name="stock"
+               value="{{ stock_no or '' }}" required>
 
         <br><br>
 
         <label>年份：</label>
-        <input type="text" name="year">
+        <input type="number" name="year"
+               value="{{ year or '' }}" required>
 
         <br><br>
 
         <label>月份：</label>
-        <input type="text" name="month">
+        <input type="number" name="month"
+               min="1" max="12"
+               value="{{ month or '' }}" required>
 
         <br><br>
 
         <button type="submit">查詢</button>
-
     </form>
 
+    {% if error %}
+        <p>{{ error }}</p>
+    {% endif %}
+
+    {% if records %}
+              
+        <h2>{{ stock_no }} 股票資料</h2>
+
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>日期</th>
+                <th>開盤價</th>
+                <th>最高價</th>
+                <th>最低價</th>
+                <th>收盤價</th>
+                <th>成交量</th>
+                              <th>MA5</th>
+                              <th>MA20</th>
+            </tr>
+
+            {% for row in records %}
+            <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.opening }}</td>
+                <td>{{ row.highest }}</td>
+                <td>{{ row.lowest }}</td>
+                <td>{{ row.closing }}</td>
+                <td>{{ row.volume }}</td>
+                             <td>{{ row.ma5 if row.ma5 is not none else "-" }}</td>
+                             <td>{{ row.ma20 if row.ma20 is not none else "-" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+      {% if records %}
+    <h2>{{ stock_no }} 當月股價走勢</h2>
+
+    <canvas id="stockChart"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const labels = {{ chart_labels | tojson }};
+        const closing = {{ chart_closing | tojson }};
+        const ma5 = {{ chart_ma5 | tojson }};
+        const ma20 = {{ chart_ma20 | tojson }};
+
+        const ctx = document.getElementById("stockChart");
+
+        new Chart(ctx, {
+            type: "line",
+
+            data: {
+                labels: labels,
+
+                datasets: [
+                    {
+                        label: "收盤價",
+                        data: closing,
+                        borderColor: "blue",
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0
+                    },
+                    {
+                        label: "MA5",
+                        data: ma5,
+                        borderColor: "orange",
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0
+                    },
+                    {
+                        label: "MA20",
+                        data: ma20,
+                        borderColor: "green",
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0
+                    }
+                ]
+            },
+
+            options: {
+                responsive: true,
+
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: "價格（元）"
+                        }
+                    },
+
+                    x: {
+                        title: {
+                            display: true,
+                            text: "交易日期"
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+{% endif %}
 </body>
 </html>
