@@ -1,16 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>股票查詢</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>股票查詢網站</title>
 </head>
 <body>
     <h1>股票查詢網站</h1>
 
+    <!-- 股票查詢表單 -->
     <form action="/stock" method="get">
-        <label>股票代號：</label>
-        <input type="text" name="stock"
-               value="{{ stock_no or '' }}" required>
+        <p>選擇股票：</p>
+
+        <label>
+            <input type="checkbox" name="stocks" value="2330"
+                {% if "2330" in (selected_stocks or []) %}checked{% endif %}>
+            台積電（2330）
+        </label>
+        <br>
+
+        <label>
+            <input type="checkbox" name="stocks" value="0050"
+                {% if "0050" in (selected_stocks or []) %}checked{% endif %}>
+            元大台灣50（0050）
+        </label>
+        <br>
+
+        <label>
+            <input type="checkbox" name="stocks" value="00878"
+                {% if "00878" in (selected_stocks or []) %}checked{% endif %}>
+            國泰永續高股息（00878）
+        </label>
 
         <br><br>
 
@@ -30,115 +51,116 @@
         <button type="submit">查詢</button>
     </form>
 
+    <!-- 錯誤訊息 -->
     {% if error %}
-        <p>{{ error }}</p>
+        <p style="color: red;">{{ error }}</p>
     {% endif %}
 
-    {% if records %}
-              
-        <h2>{{ stock_no }} 股票資料</h2>
+    <!-- 多檔股票的查詢結果 -->
+    {% if stock_results %}
+        {% for item in stock_results %}
+            <hr>
 
-        <table border="1" cellpadding="8">
-            <tr>
-                <th>日期</th>
-                <th>開盤價</th>
-                <th>最高價</th>
-                <th>最低價</th>
-                <th>收盤價</th>
-                <th>成交量</th>
-                              <th>MA5</th>
-                              <th>MA20</th>
-            </tr>
+            <h2>
+                {{ year }} 年 {{ month }} 月
+                {{ item.stock_name }}（{{ item.stock_no }}）
+            </h2>
 
-            {% for row in records %}
-            <tr>
-                <td>{{ row.date }}</td>
-                <td>{{ row.opening }}</td>
-                <td>{{ row.highest }}</td>
-                <td>{{ row.lowest }}</td>
-                <td>{{ row.closing }}</td>
-                <td>{{ row.volume }}</td>
-                             <td>{{ row.ma5 if row.ma5 is not none else "-" }}</td>
-                             <td>{{ row.ma20 if row.ma20 is not none else "-" }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+            <table border="1" cellpadding="8">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>開盤價</th>
+                        <th>最高價</th>
+                        <th>最低價</th>
+                        <th>收盤價</th>
+                        <th>成交量</th>
+                        <th>MA5</th>
+                        <th>MA20</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in item.records %}
+                        <tr>
+                            <td>{{ row.date }}</td>
+                            <td>{{ row.opening }}</td>
+                            <td>{{ row.highest }}</td>
+                            <td>{{ row.lowest }}</td>
+                            <td>{{ row.closing }}</td>
+                            <td>{{ row.volume }}</td>
+                            <td>{{ row.ma5 if row.ma5 is not none else "-" }}</td>
+                            <td>{{ row.ma20 if row.ma20 is not none else "-" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3>股價走勢圖</h3>
+            <canvas id="chart-{{ loop.index }}" height="100"></canvas>
+        {% endfor %}
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const stockCharts = {{ stock_results | tojson }};
+
+            stockCharts.forEach((item, index) => {
+                const ctx = document.getElementById(
+                    "chart-" + (index + 1)
+                );
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: item.chart_labels,
+                        datasets: [
+                            {
+                                label: "收盤價",
+                                data: item.chart_closing,
+                                borderColor: "blue",
+                                borderWidth: 2,
+                                pointRadius: 2
+                            },
+                            {
+                                label: "MA5",
+                                data: item.chart_ma5,
+                                borderColor: "orange",
+                                borderWidth: 2,
+                                pointRadius: 0
+                            },
+                            {
+                                label: "MA20",
+                                data: item.chart_ma20,
+                                borderColor: "green",
+                                borderWidth: 2,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+                        scales: {
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: "價格（元）"
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "交易日期"
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
     {% endif %}
-      {% if records %}
-    <h2>{{ stock_no }} 當月股價走勢</h2>
-
-    <canvas id="stockChart"></canvas>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        const labels = {{ chart_labels | tojson }};
-        const closing = {{ chart_closing | tojson }};
-        const ma5 = {{ chart_ma5 | tojson }};
-        const ma20 = {{ chart_ma20 | tojson }};
-
-        const ctx = document.getElementById("stockChart");
-
-        new Chart(ctx, {
-            type: "line",
-
-            data: {
-                labels: labels,
-
-                datasets: [
-                    {
-                        label: "收盤價",
-                        data: closing,
-                        borderColor: "blue",
-                        borderWidth: 2,
-                        pointRadius: 2,
-                        tension: 0
-                    },
-                    {
-                        label: "MA5",
-                        data: ma5,
-                        borderColor: "orange",
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        tension: 0
-                    },
-                    {
-                        label: "MA20",
-                        data: ma20,
-                        borderColor: "green",
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        tension: 0
-                    }
-                ]
-            },
-
-            options: {
-                responsive: true,
-
-                interaction: {
-                    mode: "index",
-                    intersect: false
-                },
-
-                scales: {
-                    y: {
-                        title: {
-                            display: true,
-                            text: "價格（元）"
-                        }
-                    },
-
-                    x: {
-                        title: {
-                            display: true,
-                            text: "交易日期"
-                        }
-                    }
-                }
-            }
-        });
-    </script>
-{% endif %}
 </body>
 </html>
