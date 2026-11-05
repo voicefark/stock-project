@@ -1,119 +1,341 @@
 
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>股票查詢網站</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            margin: 30px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        h1 {
+            color: #1f3a5f;
+        }
+
+        h2 {
+            margin-top: 35px;
+            color: #24476b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .search-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 10px 25px;
+            background-color: #2463a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #174675;
+        }
+
+        .error {
+            color: #d93025;
+            background: #fff0ef;
+            padding: 12px;
+            border-radius: 5px;
+        }
+
+        .stock-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+            overflow-x: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #e8eef5;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        .hint {
+            color: #777;
+            font-size: 14px;
+        }
+    </style>
+
 </head>
+
 <body>
+
+<div class="container">
+
     <h1>股票查詢網站</h1>
 
+    <!-- ====================== -->
     <!-- 股票查詢表單 -->
-    <form action="/stock" method="get">
-        <p>選擇股票：</p>
+    <!-- ====================== -->
 
-        <label>
-            <input type="checkbox" name="stocks" value="2330"
-                {% if "2330" in (selected_stocks or []) %}checked{% endif %}>
-            台積電（2330）
-        </label>
-        <br>
+    <div class="search-box">
 
-        <label>
-            <input type="checkbox" name="stocks" value="0050"
-                {% if "0050" in (selected_stocks or []) %}checked{% endif %}>
-            元大台灣50（0050）
-        </label>
-        <br>
+        <h2>自訂股票查詢</h2>
 
-        <label>
-            <input type="checkbox" name="stocks" value="00878"
-                {% if "00878" in (selected_stocks or []) %}checked{% endif %}>
-            國泰永續高股息（00878）
-        </label>
+        <form action="/stock" method="get">
 
-        <br><br>
+            <label>股票代號：</label>
 
-        <label>年份：</label>
-        <input type="number" name="year"
-               value="{{ year or '' }}" required>
+            <input
+                type="text"
+                name="stocks"
+                placeholder="例如：2330,2454,2317,0050"
+                value="{{ stocks_input or '' }}"
+                style="width: 300px;"
+                required
+            >
 
-        <br><br>
+            <p class="hint">
+                多檔股票請使用逗號分隔，一次最多查詢 10 檔。
+            </p>
 
-        <label>月份：</label>
-        <input type="number" name="month"
-               min="1" max="12"
-               value="{{ month or '' }}" required>
+            <br>
 
-        <br><br>
+            <label>年份：</label>
 
-        <button type="submit">查詢</button>
-    </form>
+            <input
+                type="number"
+                name="year"
+                value="{{ year or '' }}"
+                min="2000"
+                max="2100"
+                required
+            >
 
-    <!-- 錯誤訊息 -->
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
+            <br><br>
 
-    <!-- 多檔股票的查詢結果 -->
+            <label>月份：</label>
+
+            <input
+                type="number"
+                name="month"
+                min="1"
+                max="12"
+                value="{{ month or '' }}"
+                required
+            >
+
+            <br><br>
+
+            <button type="submit">查詢股票</button>
+
+        </form>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+    </div>
+
+
+    <!-- ====================== -->
+    <!-- 各檔股票查詢結果 -->
+    <!-- ====================== -->
+
     {% if stock_results %}
+
+        <h2>股票查詢結果</h2>
+
         {% for item in stock_results %}
-            <hr>
 
-            <h2>
-                {{ year }} 年 {{ month }} 月
-                {{ item.stock_name }}（{{ item.stock_no }}）
-            </h2>
+            <div class="stock-box">
 
-            <table border="1" cellpadding="8">
-                <thead>
-                    <tr>
-                        <th>日期</th>
-                        <th>開盤價</th>
-                        <th>最高價</th>
-                        <th>最低價</th>
-                        <th>收盤價</th>
-                        <th>成交量</th>
-                        <th>MA5</th>
-                        <th>MA20</th>
-                    </tr>
-                </thead>
+                <h2>
+                    {{ item.stock_name }}
+                    （{{ item.stock_no }}）
+                </h2>
 
-                <tbody>
-                    {% for row in item.records %}
+                <p>
+                    查詢期間：{{ year }} 年 {{ month }} 月
+                </p>
+
+                <h3>每日股價資料</h3>
+
+                <table>
+
+                    <thead>
                         <tr>
-                            <td>{{ row.date }}</td>
-                            <td>{{ row.opening }}</td>
-                            <td>{{ row.highest }}</td>
-                            <td>{{ row.lowest }}</td>
-                            <td>{{ row.closing }}</td>
-                            <td>{{ row.volume }}</td>
-                            <td>{{ row.ma5 if row.ma5 is not none else "-" }}</td>
-                            <td>{{ row.ma20 if row.ma20 is not none else "-" }}</td>
+                            <th>日期</th>
+                            <th>開盤價</th>
+                            <th>最高價</th>
+                            <th>最低價</th>
+                            <th>收盤價</th>
+                            <th>成交量</th>
+                            <th>MA5</th>
+                            <th>MA20</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
 
-            <h3>股價走勢圖</h3>
-            <canvas id="chart-{{ loop.index }}" height="100"></canvas>
+                    <tbody>
+
+                        {% for row in item.records %}
+
+                            <tr>
+                                <td>{{ row.date }}</td>
+                                <td>{{ row.opening }}</td>
+                                <td>{{ row.highest }}</td>
+                                <td>{{ row.lowest }}</td>
+                                <td>{{ row.closing }}</td>
+                                <td>{{ row.volume }}</td>
+
+                                <td>
+                                    {{ row.ma5 if row.ma5 is not none else "-" }}
+                                </td>
+
+                                <td>
+                                    {{ row.ma20 if row.ma20 is not none else "-" }}
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+                <h3>個別股票走勢圖</h3>
+
+                <div class="chart-container">
+                    <canvas id="stock-chart-{{ loop.index }}"></canvas>
+                </div>
+
+            </div>
+
         {% endfor %}
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <!-- ====================== -->
+        <!-- 多檔股票比較圖 -->
+        <!-- ====================== -->
+
+        <div class="chart-box">
+
+            <h2>多檔股票收盤價比較</h2>
+
+            <p class="hint">
+                比較各檔股票每日實際收盤價。
+            </p>
+
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+
+        </div>
+
+
+        <div class="chart-box">
+
+            <h2>多檔股票標準化收盤價比較</h2>
+
+            <p class="hint">
+                各股票第一個交易日設定為 100，
+                方便比較不同股票的相對漲跌幅。
+            </p>
+
+            <div class="chart-container">
+                <canvas id="normalizedChart"></canvas>
+            </div>
+
+        </div>
+
+
+        <!-- ====================== -->
+        <!-- JavaScript 圖表 -->
+        <!-- ====================== -->
+
         <script>
+
             const stockCharts = {{ stock_results | tojson }};
 
+            const colors = [
+                "blue",
+                "orange",
+                "green",
+                "red",
+                "purple",
+                "brown",
+                "pink",
+                "gray",
+                "black",
+                "teal"
+            ];
+
+
+            // ======================
+            // 1. 個別股票走勢圖
+            // ======================
+
             stockCharts.forEach((item, index) => {
+
                 const ctx = document.getElementById(
-                    "chart-" + (index + 1)
+                    "stock-chart-" + (index + 1)
                 );
 
                 new Chart(ctx, {
+
                     type: "line",
+
                     data: {
+
                         labels: item.chart_labels,
+
                         datasets: [
+
                             {
                                 label: "收盤價",
                                 data: item.chart_closing,
@@ -121,6 +343,7 @@
                                 borderWidth: 2,
                                 pointRadius: 2
                             },
+
                             {
                                 label: "MA5",
                                 data: item.chart_ma5,
@@ -128,6 +351,7 @@
                                 borderWidth: 2,
                                 pointRadius: 0
                             },
+
                             {
                                 label: "MA20",
                                 data: item.chart_ma20,
@@ -135,32 +359,262 @@
                                 borderWidth: 2,
                                 pointRadius: 0
                             }
+
                         ]
+
                     },
+
                     options: {
+
                         responsive: true,
+
+                        maintainAspectRatio: false,
+
                         interaction: {
                             mode: "index",
                             intersect: false
                         },
+
                         scales: {
+
                             y: {
                                 title: {
                                     display: true,
                                     text: "價格（元）"
                                 }
                             },
+
                             x: {
                                 title: {
                                     display: true,
                                     text: "交易日期"
                                 }
                             }
+
                         }
+
                     }
+
                 });
+
             });
+
+
+            // ======================
+            // 2. 建立共同交易日期
+            // ======================
+
+            const allDates = [
+                ...new Set(
+                    stockCharts.flatMap(item =>
+                        item.chart_labels
+                    )
+                )
+            ].sort();
+
+
+            // ======================
+            // 3. 實際收盤價比較
+            // ======================
+
+            const closingDatasets = stockCharts.map(
+                (item, index) => {
+
+                    const priceMap = new Map();
+
+                    item.chart_labels.forEach((date, i) => {
+
+                        priceMap.set(
+                            date,
+                            Number(item.chart_closing[i])
+                        );
+
+                    });
+
+                    return {
+
+                        label: item.stock_name,
+
+                        data: allDates.map(date =>
+                            priceMap.has(date)
+                                ? priceMap.get(date)
+                                : null
+                        ),
+
+                        borderColor: colors[index % colors.length],
+
+                        borderWidth: 2,
+
+                        pointRadius: 2,
+
+                        spanGaps: false
+
+                    };
+
+                }
+            );
+
+
+            new Chart(
+                document.getElementById("comparisonChart"),
+                {
+
+                    type: "line",
+
+                    data: {
+
+                        labels: allDates,
+
+                        datasets: closingDatasets
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+
+                        scales: {
+
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: "收盤價（元）"
+                                }
+                            },
+
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "交易日期"
+                                }
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            // ======================
+            // 4. 標準化收盤價比較
+            // ======================
+
+            const normalizedDatasets = stockCharts.map(
+                (item, index) => {
+
+                    const priceMap = new Map();
+
+                    item.chart_labels.forEach((date, i) => {
+
+                        priceMap.set(
+                            date,
+                            Number(item.chart_closing[i])
+                        );
+
+                    });
+
+                    const firstPrice = item.chart_closing.length > 0
+                        ? Number(item.chart_closing[0])
+                        : null;
+
+                    return {
+
+                        label: item.stock_name,
+
+                        data: allDates.map(date => {
+
+                            if (
+                                !priceMap.has(date) ||
+                                !firstPrice ||
+                                firstPrice <= 0
+                            ) {
+                                return null;
+                            }
+
+                            return Number(
+                                priceMap.get(date) /
+                                firstPrice *
+                                100
+                            .toFixed(2));
+
+                        }),
+
+                        borderColor: colors[index % colors.length],
+
+                        borderWidth: 2,
+
+                        pointRadius: 2,
+
+                        spanGaps: false
+
+                    };
+
+                }
+            );
+
+
+            new Chart(
+                document.getElementById("normalizedChart"),
+                {
+
+                    type: "line",
+
+                    data: {
+
+                        labels: allDates,
+
+                        datasets: normalizedDatasets
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+
+                        scales: {
+
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: "標準化價格（起始日 = 100）"
+                                }
+                            },
+
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "交易日期"
+                                }
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
         </script>
+
     {% endif %}
+
+</div>
+
 </body>
 </html>

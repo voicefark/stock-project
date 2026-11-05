@@ -1,211 +1,361 @@
-from flask import Flask,render_template,request#request是Flask 要從瀏覽器取得使用者送過來的資料。
-from stock_monthly_catching import get_stock_monthly #2026/10/8更新：呼叫其他程式的函式
+from flask import Flask, render_template, request
+from stock_monthly_catching import get_stock_monthly
 import pandas as pd
+
+
 app = Flask(__name__)
 
+
+# 常見股票名稱
+# 未收錄的股票仍然可以查詢，只是暫時顯示股票代號
 STOCK_NAMES = {
     "2330": "台積電",
+    "2454": "聯發科",
+    "2317": "鴻海",
+    "2308": "台達電",
+    "2881": "富邦金",
+    "2882": "國泰金",
     "0050": "元大台灣50",
-    "00878": "國泰永續高股息"
+    "0056": "元大高股息",
+    "00878": "國泰永續高股息",
+    "00919": "群益台灣精選高息"
 }
+
+
+# 計算指定月份往前推幾個月
+def get_previous_month(year, month, offset):
+    total_month = year * 12 + month - 1 - offset
+
+    new_year = total_month // 12
+    new_month = total_month % 12 + 1
+
+    return new_year, new_month
+
+
+# 取得股票名稱
+def get_stock_name(stock_no):
+    return STOCK_NAMES.get(
+        stock_no,
+        f"股票代號 {stock_no}"
+    )
+
+
+# 建立錯誤回應
+def render_error(message, stocks_input="", year="", month=""):
+    return render_template(
+        "index.html",
+        error=message,
+        stocks_input=stocks_input,
+        year=year,
+        month=month,
+        stock_results=[]
+    )
+
+
 @app.route("/")
-def home():
-    return render_template("index.html")
-@app.route("/hello")
-def hello():
-    return "hello student"
+def index():
+    return render_template(
+        "index.html",
+        stocks_input="",
+        year="",
+        month="",
+        stock_results=[]
+    )
 
 
-@app.route("/stock")
+@app.route("/stock", methods=["GET"])
 def stock():
-    # 取得使用者選擇的股票、年份與月份
-    selected_stocks = request.args.getlist("stocks")
-    year = request.args.get("year")
-    month = request.args.get("month")
 
-    # 檢查輸入是否完整
-    if not selected_stocks or not year or not month:
-        return render_template(
-            "index.html",
-            error="請至少選擇一檔股票，並輸入年份和月份。",
-            selected_stocks=selected_stocks,
-            year=year,
-            month=month
-        )
+    # =========================
+    # 1. 取得使用者輸入
+    # =========================
 
-    # 檢查股票代號是否在目前支援的清單內
-    invalid_stocks = [
-        stock for stock in selected_stocks
-        if stock not in STOCK_NAMES
+    stocks_input = request.args.get("stocks", "").strip()
+    year_input = request.args.get("year", "").strip()
+    month_input = request.args.get("month", "").strip()
+
+    # 使用逗號分割股票代號
+    selected_stocks = [
+        item.strip()
+        for item in stocks_input.split(",")
+        if item.strip()
     ]
 
-    if invalid_stocks:
-        return render_template(
-            "index.html",
-            error="包含不支援的股票代號：" + ", ".join(invalid_stocks),
-            selected_stocks=selected_stocks,
-            year=year,
-            month=month
+    # =========================
+    # 2. 檢查輸入是否完整
+    # =========================
+
+    if not selected_stocks or not year_input or not month_input:
+        return render_error(
+            "請輸入股票代號、年份和月份。",
+            stocks_input,
+            year_input,
+            month_input
         )
 
-    # 檢查年份與月份格式
-    try:
-        year_num = int(year)
-        month_num = int(month)
+    # =========================
+    # 3. 檢查股票代號格式
+    # =========================
 
-        if year_num < 1900 or not 1 <= month_num <= 12:
+    if any(not item.isdigit() for item in selected_stocks):
+        return render_error(
+            "股票代號只能輸入數字，請使用逗號分隔。",
+            stocks_input,
+            year_input,
+            month_input
+        )
+
+    # 移除重複股票代號，保留原本順序
+    selected_stocks = list(dict.fromkeys(selected_stocks))
+
+    # 限制一次最多查詢 10 檔
+    if len(selected_stocks) > 10:
+        return render_error(
+            "一次最多只能查詢 10 檔股票。",
+            stocks_input,
+            year_input,
+            month_input
+        )
+
+    # =========================
+    # 4. 檢查年份與月份
+    # =========================
+
+    try:
+        year = int(year_input)
+        month = int(month_input)
+
+        if year < 2000 or year > 2100:
+            raise ValueError
+
+        if month < 1 or month > 12:
             raise ValueError
 
     except ValueError:
-        return render_template(
-            "index.html",
-            error="年份或月份格式錯誤。",
-            selected_stocks=selected_stocks,
-            year=year,
-            month=month
+        return render_error(
+            "年份或月份格式錯誤。",
+            stocks_input,
+            year_input,
+            month_input
         )
 
-    # 每檔股票各自整理查詢結果
+    # =========================
+    # 5. 查詢每一檔股票
+    # =========================
+
     stock_results = []
     errors = []
 
     for stock_no in selected_stocks:
-        stock_name = STOCK_NAMES[stock_no]
-        df_parts = []
 
-        # 取得查詢月份之前 3 個月及查詢月份
-        for offset in range(3, -1, -1):
-            total_month = (
-                year_num * 12 + (month_num - 1) - offset
-            )
+        stock_name = get_stock_name(stock_no)
 
-            fetch_year = total_month // 12
-            fetch_month = total_month % 12 + 1
+        try:
+            # 儲存最近四個月的資料
+            # 用來計算 MA5、MA20
+            all_data = []
 
-            try:
+            # 由較早的月份開始查詢
+            for offset in range(3, -1, -1):
+
+                query_year, query_month = get_previous_month(
+                    year,
+                    month,
+                    offset
+                )
+
                 df = get_stock_monthly(
                     stock_no,
-                    str(fetch_year),
-                    str(fetch_month)
+                    str(query_year),
+                    str(query_month)
                 )
-            except Exception:
-                df = None
 
-            if df is not None and not df.empty:
-                df_parts.append(df)
+                if df is not None and not df.empty:
+                    all_data.append(df)
 
-        # 這檔股票完全沒有取得資料
-        if not df_parts:
-            errors.append(
-                f"{stock_name}（{stock_no}）查無資料"
+            # 沒有取得任何資料
+            if not all_data:
+                if(stock_no=="114514"):
+                    errors.append(f"{stock_no}：這麼臭的股票有存在的必要嗎?")
+                    continue
+                errors.append(
+                    f"股票代號{stock_no}：查無資料"
+                )
+                continue
+
+            # 合併四個月資料
+            df = pd.concat(
+                all_data,
+                ignore_index=True
             )
-            continue
 
-        # 合併這檔股票的歷史資料
-        df_all = pd.concat(df_parts, ignore_index=True)
+            # 確保必要欄位存在
+            required_columns = [
+                "date",
+                "opening",
+                "highest",
+                "lowest",
+                "closing",
+                "volume"
+            ]
 
-        df_all["date"] = pd.to_datetime(
-            df_all["date"], errors="coerce"
-        )
-        df_all["closing"] = pd.to_numeric(
-            df_all["closing"], errors="coerce"
-        )
+            if not all(
+                column in df.columns
+                for column in required_columns
+            ):
+                errors.append(
+                    f"{stock_no}：股價資料欄位不完整"
+                )
+                continue
 
-        df_all = (
-            df_all
-            .dropna(subset=["date", "closing"])
-            .sort_values("date")
-            .drop_duplicates(subset=["date"])
-            .reset_index(drop=True)
-        )
-
-        # 計算移動平均
-        df_all["ma5"] = df_all["closing"].rolling(
-            window=5, min_periods=5
-        ).mean()
-
-        df_all["ma20"] = df_all["closing"].rolling(
-            window=20, min_periods=20
-        ).mean()
-
-        # 只保留查詢月份
-        df_month = df_all[
-            (df_all["date"].dt.year == year_num) &
-            (df_all["date"].dt.month == month_num)
-        ].copy()
-
-        if df_month.empty:
-            errors.append(
-                f"{stock_name}（{stock_no}）在指定月份沒有資料"
+            # 將價格轉換為數值
+            df["closing"] = pd.to_numeric(
+                df["closing"],
+                errors="coerce"
             )
-            continue
 
-        # 整理圖表資料
-        chart_labels = df_month["date"].dt.strftime(
-            "%Y-%m-%d"
-        ).tolist()
+            # 移除無效收盤價
+            df = df.dropna(subset=["closing"])
 
-        chart_closing = df_month["closing"].tolist()
+            # 移除重複日期
+            df = df.drop_duplicates(
+                subset=["date"],
+                keep="last"
+            )
 
-        chart_ma5 = [
-            None if pd.isna(value) else round(float(value), 2)
-            for value in df_month["ma5"]
-        ]
+            # 四個月資料依照取得順序排列，
+            # 再計算移動平均
+            df["ma5"] = df["closing"].rolling(
+                window=5
+            ).mean()
 
-        chart_ma20 = [
-            None if pd.isna(value) else round(float(value), 2)
-            for value in df_month["ma20"]
-        ]
+            df["ma20"] = df["closing"].rolling(
+                window=20
+            ).mean()
 
-        # 整理表格資料
-        df_month["date"] = df_month["date"].dt.strftime(
-            "%Y-%m-%d"
-        )
+            # =========================
+            # 6. 只保留使用者指定月份
+            # =========================
 
-        df_month = df_month.round({
-            "opening": 2,
-            "highest": 2,
-            "lowest": 2,
-            "closing": 2,
-            "ma5": 2,
-            "ma20": 2
-        })
+            target_df = get_stock_monthly(
+                stock_no,
+                str(year),
+                str(month)
+            )
 
-        records = (
-            df_month.astype(object)
-            .where(pd.notna(df_month), None)
-            .to_dict(orient="records")
-        )
+            if target_df is None or target_df.empty:
+                errors.append(
+                    f"{stock_no}（{stock_name}）：指定月份查無資料"
+                )
+                continue
 
-        # 將這檔股票的結果存起來
-        stock_results.append({
-            "stock_no": stock_no,
-            "stock_name": stock_name,
-            "records": records,
-            "chart_labels": chart_labels,
-            "chart_closing": chart_closing,
-            "chart_ma5": chart_ma5,
-            "chart_ma20": chart_ma20
-        })
+            target_dates = set(
+                target_df["date"].astype(str)
+            )
 
-    # 所有股票都查不到資料
-    if not stock_results:
-        return render_template(
-            "index.html",
-            error="；".join(errors) or "查無資料。",
-            selected_stocks=selected_stocks,
-            year=year,
-            month=month
-        )
+            result_df = df[
+                df["date"].astype(str).isin(target_dates)
+            ].copy()
+
+            if result_df.empty:
+                errors.append(
+                    f"{stock_no}（{stock_name}）：無法整理指定月份資料"
+                )
+                continue
+
+            # =========================
+            # 7. 整理表格資料
+            # =========================
+
+            records = []
+
+            for _, row in result_df.iterrows():
+
+                records.append({
+                    "date": str(row["date"]),
+                    "opening": row["opening"],
+                    "highest": row["highest"],
+                    "lowest": row["lowest"],
+                    "closing": float(row["closing"]),
+                    "volume": row["volume"],
+                    "ma5": (
+                        round(float(row["ma5"]), 2)
+                        if pd.notna(row["ma5"])
+                        else None
+                    ),
+                    "ma20": (
+                        round(float(row["ma20"]), 2)
+                        if pd.notna(row["ma20"])
+                        else None
+                    )
+                })
+
+            # =========================
+            # 8. 整理折線圖資料
+            # =========================
+
+            chart_labels = [
+                str(row["date"])
+                for _, row in result_df.iterrows()
+            ]
+
+            chart_closing = [
+                float(row["closing"])
+                for _, row in result_df.iterrows()
+            ]
+
+            chart_ma5 = [
+                round(float(value), 2)
+                if pd.notna(value)
+                else None
+                for value in result_df["ma5"]
+            ]
+
+            chart_ma20 = [
+                round(float(value), 2)
+                if pd.notna(value)
+                else None
+                for value in result_df["ma20"]
+            ]
+
+            # =========================
+            # 9. 儲存股票查詢結果
+            # =========================
+
+            stock_results.append({
+                "stock_no": stock_no,
+                "stock_name": stock_name,
+                "records": records,
+                "chart_labels": chart_labels,
+                "chart_closing": chart_closing,
+                "chart_ma5": chart_ma5,
+                "chart_ma20": chart_ma20
+            })
+
+        except Exception as e:
+
+            errors.append(
+                f"{stock_no}（{stock_name}）：查詢發生錯誤：{str(e)}"
+            )
+
+    # =========================
+    # 10. 回傳查詢結果
+    # =========================
 
     return render_template(
         "index.html",
         stock_results=stock_results,
+        stocks_input=stocks_input,
         selected_stocks=selected_stocks,
         year=year,
         month=month,
         error="；".join(errors) if errors else None
     )
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        debug=True,
+        host="127.0.0.1",
+        port=5000
+    )
