@@ -12,20 +12,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            padding: 20px;
+            background: #f3f6fa;
             font-family: Arial, "Microsoft JhengHei", sans-serif;
-            margin: 30px;
-            background-color: #f5f7fa;
             color: #333;
-        }
-
-        h1 {
-            color: #1f3a5f;
-        }
-
-        h2 {
-            margin-top: 35px;
-            color: #24476b;
         }
 
         .container {
@@ -33,588 +30,881 @@
             margin: auto;
         }
 
+        /* 網站標題 */
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #1d3557;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #64748b;
+        }
+
+        /* 首頁左右版面 */
+
+        .home-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 22px;
+            margin-bottom: 30px;
+            align-items: stretch;
+        }
+
+        /* 頭條新聞區 */
+
+        .headline-box,
         .search-box {
             background: white;
             padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .headline-tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* 頭條圖片 */
+
+        .headline-image {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
             border-radius: 10px;
-            margin-bottom: 25px;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .headline-no-image {
+            width: 100%;
+            height: 280px;
+            margin-top: 10px;
+            border-radius: 10px;
+            background: #e9eef5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667085;
+        }
+
+        /* 頭條標題 */
+
+        .headline-title {
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1.6;
+            margin-top: 18px;
+            margin-bottom: 12px;
+            color: #1d3557;
+        }
+
+        .headline-meta {
+            color: #777;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        .headline-link {
+            display: inline-block;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .headline-link:hover {
+            text-decoration: underline;
+        }
+
+        .news-error,
+        .empty-message {
+            color: #777;
+            line-height: 1.6;
+        }
+
+        /* 股票查詢區 */
+
+        .search-box h2 {
+            color: #1d3557;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
         }
 
         input {
-            padding: 8px;
-            margin: 5px;
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
         }
 
         button {
-            padding: 10px 25px;
-            background-color: #2463a6;
-            color: white;
+            width: 100%;
+            margin-top: 22px;
+            padding: 12px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
         }
 
         button:hover {
-            background-color: #174675;
+            background: #1d4ed8;
         }
+
+        .hint {
+            font-size: 12px;
+            color: #777;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        /* 錯誤訊息 */
 
         .error {
-            color: #d93025;
-            background: #fff0ef;
-            padding: 12px;
-            border-radius: 5px;
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
-        .stock-box {
+        /* 股票資料 */
+
+        .section-title {
+            color: #1d3557;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stock-box,
+        .chart-box,
+        .comparison-box {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 25px;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .stock-box h2,
+        .chart-box h3,
+        .comparison-box h3 {
+            color: #1d3557;
+            margin-top: 0;
+        }
+
+        /* 表格 */
+
+        .table-container {
+            width: 100%;
             overflow-x: auto;
         }
 
         table {
-            border-collapse: collapse;
             width: 100%;
-            background: white;
+            border-collapse: collapse;
+            min-width: 450px;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+        th,
+        td {
+            padding: 12px;
             text-align: center;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         th {
-            background-color: #e8eef5;
+            background: #eff6ff;
+            color: #1d3557;
         }
 
-        tr:nth-child(even) {
-            background-color: #f8fafc;
+        tr:hover {
+            background: #f8fafc;
         }
 
-        .chart-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 25px;
-        }
+        /* 圖表 */
 
         .chart-container {
             position: relative;
+            width: 100%;
             height: 350px;
         }
 
-        .hint {
-            color: #777;
-            font-size: 14px;
+        /* 頁尾 */
+
+        footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 40px;
+            padding: 20px;
         }
+
+        /* 手機版 */
+
+        @media (max-width: 750px) {
+
+            body {
+                padding: 12px;
+            }
+
+            .home-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .headline-image,
+            .headline-no-image {
+                height: 210px;
+            }
+
+            .headline-title {
+                font-size: 20px;
+            }
+
+            .chart-container {
+                height: 280px;
+            }
+
+        }
+
     </style>
 
 </head>
+
 
 <body>
 
 <div class="container">
 
-    <h1>股票查詢網站</h1>
+    <!-- 網站標題 -->
 
-    <!-- ====================== -->
-    <!-- 股票查詢表單 -->
-    <!-- ====================== -->
+    <header>
+        <h1>股票查詢網站</h1>
+        <p>掌握經濟趨勢，分析股票市場</p>
+    </header>
 
-    <div class="search-box">
 
-        <h2>自訂股票查詢</h2>
+    <!-- 首頁：左側頭條、右側查詢 -->
 
-        <form action="/stock" method="get">
+    <div class="home-layout">
 
-            <label>股票代號：</label>
+        <!-- 左側：經濟頭條 -->
 
-            <input
-                type="text"
-                name="stocks"
-                placeholder="例如：2330,2454,2317,0050"
-                value="{{ stocks_input or '' }}"
-                style="width: 300px;"
-                required
-            >
+        <section class="headline-box">
 
-            <p class="hint">
-                多檔股票請使用逗號分隔，一次最多查詢 10 檔。
-            </p>
+            <div class="headline-tag">
+                近期經濟頭條
+            </div>
 
-            <br>
+            {% if headline %}
 
-            <label>年份：</label>
+                <!-- 頭條圖片 -->
 
-            <input
-                type="number"
-                name="year"
-                value="{{ year or '' }}"
-                min="2000"
-                max="2100"
-                required
-            >
+                {% if headline.image %}
 
-            <br><br>
+                    <a
+                        href="{{ headline.link }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
 
-            <label>月份：</label>
+                        <img
+                            src="{{ headline.image }}"
+                            class="headline-image"
+                            alt="經濟新聞圖片"
+                            referrerpolicy="no-referrer"
+                        >
 
-            <input
-                type="number"
-                name="month"
-                min="1"
-                max="12"
-                value="{{ month or '' }}"
-                required
-            >
+                    </a>
 
-            <br><br>
+                {% else %}
 
-            <button type="submit">查詢股票</button>
+                    <div class="headline-no-image">
+                        暫無新聞圖片
+                    </div>
 
-        </form>
+                {% endif %}
 
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+
+                <!-- 新聞標題 -->
+
+                <div class="headline-title">
+                    {{ headline.title }}
+                </div>
+
+
+                <!-- 新聞來源與時間 -->
+
+                <div class="headline-meta">
+                    {{ headline.source }}
+                    ｜ {{ headline.published }}
+                </div>
+
+
+                <!-- 閱讀新聞 -->
+
+                <a
+                    class="headline-link"
+                    href="{{ headline.link }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    閱讀完整新聞 →
+                </a>
+
+            {% elif news_error %}
+
+                <p class="news-error">
+                    {{ news_error }}
+                </p>
+
+            {% else %}
+
+                <p class="empty-message">
+                    暫時沒有經濟頭條。
+                </p>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- 右側：股票查詢 -->
+
+        <section class="search-box">
+
+            <h2>股票查詢</h2>
+
+            <form action="/stock" method="GET">
+
+                <label for="stock">
+                    股票代號
+                </label>
+
+                <input
+                    type="text"
+                    id="stock"
+                    name="stocks"
+                    placeholder="例如：2330,0050,00878"
+                    value="{{ stocks_input }}"
+                    required
+                >
+
+                <div class="hint">
+                    多支股票請使用逗號分隔，最多查詢 10 支。
+                </div>
+
+
+                <label for="year">
+                    年份
+                </label>
+
+                <input
+                    type="number"
+                    id="year"
+                    name="year"
+                    min="2000"
+                    max="2100"
+                    value="{{ year }}"
+                    required
+                >
+
+
+                <label for="month">
+                    月份
+                </label>
+
+                <input
+                    type="number"
+                    id="month"
+                    name="month"
+                    min="1"
+                    max="12"
+                    value="{{ month }}"
+                    required
+                >
+
+
+                <button type="submit">
+                    查詢股票
+                </button>
+
+            </form>
+
+        </section>
 
     </div>
 
 
-    <!-- ====================== -->
-    <!-- 各檔股票查詢結果 -->
-    <!-- ====================== -->
+    <!-- 查詢錯誤 -->
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <!-- 個股資料 -->
 
     {% if stock_results %}
 
-        <h2>股票查詢結果</h2>
+        <h2 class="section-title">
+            股票查詢結果
+        </h2>
 
-        {% for item in stock_results %}
+        {% for stock in stock_results %}
 
-            <div class="stock-box">
+            <section class="stock-box">
 
                 <h2>
-                    {{ item.stock_name }}
-                    （{{ item.stock_no }}）
+                    {{ stock.stock_no }}
+                    {{ stock.stock_name }}
                 </h2>
 
-                <p>
-                    查詢期間：{{ year }} 年 {{ month }} 月
-                </p>
+                <div class="table-container">
 
-                <h3>每日股價資料</h3>
+                    <table>
 
-                <table>
-
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>開盤價</th>
-                            <th>最高價</th>
-                            <th>最低價</th>
-                            <th>收盤價</th>
-                            <th>成交量</th>
-                            <th>MA5</th>
-                            <th>MA20</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        {% for row in item.records %}
-
+                        <thead>
                             <tr>
-                                <td>{{ row.date }}</td>
-                                <td>{{ row.opening }}</td>
-                                <td>{{ row.highest }}</td>
-                                <td>{{ row.lowest }}</td>
-                                <td>{{ row.closing }}</td>
-                                <td>{{ row.volume }}</td>
-
-                                <td>
-                                    {{ row.ma5 if row.ma5 is not none else "-" }}
-                                </td>
-
-                                <td>
-                                    {{ row.ma20 if row.ma20 is not none else "-" }}
-                                </td>
+                                <th>日期</th>
+                                <th>收盤價</th>
+                                <th>MA5</th>
+                                <th>MA20</th>
                             </tr>
+                        </thead>
 
-                        {% endfor %}
+                        <tbody>
 
-                    </tbody>
+                            {% for row in stock.records %}
 
-                </table>
+                                <tr>
 
-                <h3>個別股票走勢圖</h3>
+                                    <td>{{ row.date }}</td>
 
-                <div class="chart-container">
-                    <canvas id="stock-chart-{{ loop.index }}"></canvas>
+                                    <td>
+                                        {{ row.closing }}
+                                    </td>
+
+                                    <td>
+                                        {% if row.ma5 is not none %}
+                                            {{ row.ma5 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if row.ma20 is not none %}
+                                            {{ row.ma20 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
                 </div>
 
-            </div>
+            </section>
+
+
+            <!-- 個股收盤價與均線圖 -->
+
+            <section class="chart-box">
+
+                <h3>
+                    {{ stock.stock_no }}
+                    {{ stock.stock_name }}－價格與均線
+                </h3>
+
+                <div class="chart-container">
+                    <canvas id="stockChart{{ loop.index }}"></canvas>
+                </div>
+
+            </section>
 
         {% endfor %}
 
 
-        <!-- ====================== -->
-        <!-- 多檔股票比較圖 -->
-        <!-- ====================== -->
+        <!-- 多股票比較圖：至少兩支股票才顯示 -->
 
-        <div class="chart-box">
+        {% if stock_results|length >= 2 %}
 
-            <h2>多檔股票收盤價比較</h2>
+            <h2 class="section-title">
+                多股票比較
+            </h2>
 
-            <p class="hint">
-                比較各檔股票每日實際收盤價。
-            </p>
+            <section class="comparison-box">
 
-            <div class="chart-container">
-                <canvas id="comparisonChart"></canvas>
-            </div>
+                <h3>收盤價比較</h3>
 
-        </div>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
 
+            </section>
 
-        <div class="chart-box">
 
-            <h2>多檔股票標準化收盤價比較</h2>
+            <section class="comparison-box">
 
-            <p class="hint">
-                各股票第一個交易日設定為 100，
-                方便比較不同股票的相對漲跌幅。
-            </p>
+                <h3>漲跌幅比較（以當月第一個交易日為 100）</h3>
 
-            <div class="chart-container">
-                <canvas id="normalizedChart"></canvas>
-            </div>
+                <div class="chart-container">
+                    <canvas id="normalizedChart"></canvas>
+                </div>
 
-        </div>
+            </section>
 
-
-        <!-- ====================== -->
-        <!-- JavaScript 圖表 -->
-        <!-- ====================== -->
-
-        <script>
-
-            const stockCharts = {{ stock_results | tojson }};
-
-            const colors = [
-                "blue",
-                "orange",
-                "green",
-                "red",
-                "purple",
-                "brown",
-                "pink",
-                "gray",
-                "black",
-                "teal"
-            ];
-
-
-            // ======================
-            // 1. 個別股票走勢圖
-            // ======================
-
-            stockCharts.forEach((item, index) => {
-
-                const ctx = document.getElementById(
-                    "stock-chart-" + (index + 1)
-                );
-
-                new Chart(ctx, {
-
-                    type: "line",
-
-                    data: {
-
-                        labels: item.chart_labels,
-
-                        datasets: [
-
-                            {
-                                label: "收盤價",
-                                data: item.chart_closing,
-                                borderColor: "blue",
-                                borderWidth: 2,
-                                pointRadius: 2
-                            },
-
-                            {
-                                label: "MA5",
-                                data: item.chart_ma5,
-                                borderColor: "orange",
-                                borderWidth: 2,
-                                pointRadius: 0
-                            },
-
-                            {
-                                label: "MA20",
-                                data: item.chart_ma20,
-                                borderColor: "green",
-                                borderWidth: 2,
-                                pointRadius: 0
-                            }
-
-                        ]
-
-                    },
-
-                    options: {
-
-                        responsive: true,
-
-                        maintainAspectRatio: false,
-
-                        interaction: {
-                            mode: "index",
-                            intersect: false
-                        },
-
-                        scales: {
-
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: "價格（元）"
-                                }
-                            },
-
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: "交易日期"
-                                }
-                            }
-
-                        }
-
-                    }
-
-                });
-
-            });
-
-
-            // ======================
-            // 2. 建立共同交易日期
-            // ======================
-
-            const allDates = [
-                ...new Set(
-                    stockCharts.flatMap(item =>
-                        item.chart_labels
-                    )
-                )
-            ].sort();
-
-
-            // ======================
-            // 3. 實際收盤價比較
-            // ======================
-
-            const closingDatasets = stockCharts.map(
-                (item, index) => {
-
-                    const priceMap = new Map();
-
-                    item.chart_labels.forEach((date, i) => {
-
-                        priceMap.set(
-                            date,
-                            Number(item.chart_closing[i])
-                        );
-
-                    });
-
-                    return {
-
-                        label: item.stock_name,
-
-                        data: allDates.map(date =>
-                            priceMap.has(date)
-                                ? priceMap.get(date)
-                                : null
-                        ),
-
-                        borderColor: colors[index % colors.length],
-
-                        borderWidth: 2,
-
-                        pointRadius: 2,
-
-                        spanGaps: false
-
-                    };
-
-                }
-            );
-
-
-            new Chart(
-                document.getElementById("comparisonChart"),
-                {
-
-                    type: "line",
-
-                    data: {
-
-                        labels: allDates,
-
-                        datasets: closingDatasets
-
-                    },
-
-                    options: {
-
-                        responsive: true,
-
-                        maintainAspectRatio: false,
-
-                        interaction: {
-                            mode: "index",
-                            intersect: false
-                        },
-
-                        scales: {
-
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: "收盤價（元）"
-                                }
-                            },
-
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: "交易日期"
-                                }
-                            }
-
-                        }
-
-                    }
-
-                }
-            );
-
-
-            // ======================
-            // 4. 標準化收盤價比較
-            // ======================
-
-            const normalizedDatasets = stockCharts.map(
-                (item, index) => {
-
-                    const priceMap = new Map();
-
-                    item.chart_labels.forEach((date, i) => {
-
-                        priceMap.set(
-                            date,
-                            Number(item.chart_closing[i])
-                        );
-
-                    });
-
-                    const firstPrice = item.chart_closing.length > 0
-                        ? Number(item.chart_closing[0])
-                        : null;
-
-                    return {
-
-                        label: item.stock_name,
-
-                        data: allDates.map(date => {
-
-                            if (
-                                !priceMap.has(date) ||
-                                !firstPrice ||
-                                firstPrice <= 0
-                            ) {
-                                return null;
-                            }
-
-                            return Number(
-                                priceMap.get(date) /
-                                firstPrice *
-                                100
-                            .toFixed(2));
-
-                        }),
-
-                        borderColor: colors[index % colors.length],
-
-                        borderWidth: 2,
-
-                        pointRadius: 2,
-
-                        spanGaps: false
-
-                    };
-
-                }
-            );
-
-
-            new Chart(
-                document.getElementById("normalizedChart"),
-                {
-
-                    type: "line",
-
-                    data: {
-
-                        labels: allDates,
-
-                        datasets: normalizedDatasets
-
-                    },
-
-                    options: {
-
-                        responsive: true,
-
-                        maintainAspectRatio: false,
-
-                        interaction: {
-                            mode: "index",
-                            intersect: false
-                        },
-
-                        scales: {
-
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: "標準化價格（起始日 = 100）"
-                                }
-                            },
-
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: "交易日期"
-                                }
-                            }
-
-                        }
-
-                    }
-
-                }
-            );
-
-        </script>
+        {% endif %}
 
     {% endif %}
 
+
+    <footer>
+        股票查詢網站
+    </footer>
+
 </div>
 
+
+<script>
+
+    // Flask 傳入的股票資料
+
+    const stockCharts = {{ stock_results | tojson }};
+
+
+    // ==============================
+    // 個股圖表
+    // ==============================
+
+    stockCharts.forEach((stock, index) => {
+
+        const canvas = document.getElementById(
+            "stockChart" + (index + 1)
+        );
+
+        if (!canvas) {
+            return;
+        }
+
+        new Chart(canvas, {
+
+            type: "line",
+
+            data: {
+
+                labels: stock.chart_labels,
+
+                datasets: [
+
+                    {
+                        label: "收盤價",
+                        data: stock.chart_closing,
+                        borderColor: "#2563eb",
+                        backgroundColor: "#2563eb",
+                        borderWidth: 2,
+                        tension: 0.2
+                    },
+
+                    {
+                        label: "MA5",
+                        data: stock.chart_ma5,
+                        borderColor: "#f59e0b",
+                        backgroundColor: "#f59e0b",
+                        borderWidth: 2,
+                        tension: 0.2
+                    },
+
+                    {
+                        label: "MA20",
+                        data: stock.chart_ma20,
+                        borderColor: "#16a34a",
+                        backgroundColor: "#16a34a",
+                        borderWidth: 2,
+                        tension: 0.2
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+
+                plugins: {
+
+                    legend: {
+                        position: "top"
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+                        beginAtZero: false
+                    }
+
+                }
+
+            }
+
+        });
+
+    });
+
+
+    // ==============================
+    // 多股票比較圖
+    // ==============================
+
+    if (stockCharts.length >= 2) {
+
+        // 整理所有股票的日期
+
+        const allDates = [
+            ...new Set(
+                stockCharts.flatMap(
+                    stock => stock.chart_labels
+                )
+            )
+        ].sort();
+
+
+        // 建立日期與收盤價對照表
+
+        const priceMaps = stockCharts.map(stock => {
+
+            const map = new Map();
+
+            stock.records.forEach(row => {
+
+                map.set(
+                    row.date,
+                    Number(row.closing)
+                );
+
+            });
+
+            return map;
+
+        });
+
+
+        // ==============================
+        // 收盤價比較
+        // ==============================
+
+        const closingDatasets = stockCharts.map(
+            (stock, index) => {
+
+                return {
+
+                    label:
+                        stock.stock_no + " " +
+                        stock.stock_name,
+
+                    data: allDates.map(date => {
+
+                        return priceMaps[index].get(date) ?? null;
+
+                    }),
+
+                    borderWidth: 2,
+                    tension: 0.2
+
+                };
+
+            }
+        );
+
+
+        const comparisonCanvas = document.getElementById(
+            "comparisonChart"
+        );
+
+        if (comparisonCanvas) {
+
+            new Chart(comparisonCanvas, {
+
+                type: "line",
+
+                data: {
+
+                    labels: allDates,
+
+                    datasets: closingDatasets
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    interaction: {
+                        mode: "index",
+                        intersect: false
+                    }
+
+                }
+
+            });
+
+        }
+
+
+        // ==============================
+        // 標準化比較
+        // 第一天價格 = 100
+        // ==============================
+
+        const normalizedDatasets = stockCharts.map(
+            (stock, index) => {
+
+                const priceMap = priceMaps[index];
+
+                const firstPrice = stock.records.length > 0
+                    ? Number(stock.records[0].closing)
+                    : null;
+
+                return {
+
+                    label:
+                        stock.stock_no + " " +
+                        stock.stock_name,
+
+                    data: allDates.map(date => {
+
+                        const price = priceMap.get(date);
+
+                        if (
+                            firstPrice === null ||
+                            !Number.isFinite(firstPrice) ||
+                            firstPrice <= 0 ||
+                            price === undefined
+                        ) {
+                            return null;
+                        }
+
+                        return Number(
+                            (
+                                price /
+                                firstPrice *
+                                100
+                            ).toFixed(2)
+                        );
+
+                    }),
+
+                    borderWidth: 2,
+                    tension: 0.2
+
+                };
+
+            }
+        );
+
+
+        const normalizedCanvas = document.getElementById(
+            "normalizedChart"
+        );
+
+        if (normalizedCanvas) {
+
+            new Chart(normalizedCanvas, {
+
+                type: "line",
+
+                data: {
+
+                    labels: allDates,
+
+                    datasets: normalizedDatasets
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    interaction: {
+                        mode: "index",
+                        intersect: false
+                    },
+
+                    scales: {
+
+                        y: {
+                            title: {
+                                display: true,
+                                text: "指數（第一個交易日 = 100）"
+                            }
+                        }
+
+                    }
+
+                }
+
+            });
+
+        }
+
+    }
+
+</script>
+
 </body>
+
 </html>
