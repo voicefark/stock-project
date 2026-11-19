@@ -11,7 +11,7 @@ from datetime import datetime
 import re
 from html.parser import HTMLParser
 from urllib.parse import urljoin
-
+from datetime import timezone, timedelta
 app = Flask(__name__)
 
 
@@ -435,6 +435,167 @@ def index():
 
 @app.route("/stock")
 def stock():
+
+    # ------------------------------
+    # 1. 取得股票代號
+    # ------------------------------
+
+    # 支援 stocks 與 stock 兩種參數名稱
+    stocks = request.args.getlist("stocks")
+
+    if not stocks:
+        stocks = request.args.getlist("stock")
+
+    # 將逗號分隔的股票代號拆開
+    stock_list = []
+
+    for item in stocks:
+        stock_list.extend(item.split(","))
+
+    # 清除空白
+    stocks = [
+        s.strip()
+        for s in stock_list
+        if s.strip()
+    ]
+
+    # 移除重複股票，保留原本順序
+    stocks = list(dict.fromkeys(stocks))
+
+    stocks_input = ",".join(stocks)
+
+    # ------------------------------
+    # 2. 取得年份與月份
+    # ------------------------------
+
+    try:
+        year = int(
+            request.args.get(
+                "year",
+                datetime.now().year
+            )
+        )
+
+        month = int(
+            request.args.get(
+                "month",
+                datetime.now().month
+            )
+        )
+
+    except ValueError:
+        return render_error("年份或月份格式錯誤。")
+
+    # ------------------------------
+    # 3. 基本資料驗證
+    # ------------------------------
+
+    if not stocks:
+        return render_error("請輸入至少一支股票。")
+
+    if len(stocks) > 10:
+        return render_error("最多只能同時查詢 10 支股票。")
+
+    if not 2000 <= year <= 2100:
+        return render_error("年份必須介於 2000 至 2100。")
+
+    if not 1 <= month <= 12:
+        return render_error("月份必須介於 1 至 12。")
+
+    for stock_no in stocks:
+
+        if not stock_no.isdigit():
+            return render_error(
+                f"股票代號格式錯誤：{stock_no}"
+            )
+
+        if stock_no == "114514":
+            return render_error(
+                "這麼臭的股票有存在的必要嗎？"
+            )
+
+    # ------------------------------
+    # 4. 逐支取得股票資料
+    # ------------------------------
+
+    stock_results = []
+    errors = []
+
+    for stock_no in stocks:
+
+        print(f"開始查詢股票：{stock_no}")
+
+        try:
+
+            result = get_stock_result(
+                stock_no,
+                year,
+                month
+            )
+
+            if result is None:
+
+                errors.append(
+                    f"{stock_no}（{STOCK_NAMES.get(stock_no, '未知股票')}）：查無資料"
+                )
+
+                print(f"{stock_no}：查無資料")
+
+            else:
+
+                stock_results.append(result)
+
+                print(
+                    f"{stock_no} 查詢成功，"
+                    f"取得 {len(result['records'])} 筆資料"
+                )
+
+        except Exception as e:
+
+            print(
+                f"{stock_no} 查詢失敗：{e}"
+            )
+
+            errors.append(
+                f"{stock_no}：資料處理失敗"
+            )
+
+    # ------------------------------
+    # 5. 整理錯誤訊息
+    # ------------------------------
+
+    error = None
+
+    if errors:
+        error = "；".join(errors)
+
+    if not stock_results and not error:
+        error = "查無股票資料。"
+
+    # ------------------------------
+    # 6. 顯示查詢結果
+    # ------------------------------
+
+    return render_template(
+        "index.html",
+
+        # 股票查詢頁面不顯示首頁頭條
+        headline=None,
+        news_error=None,
+
+        # 股票資料
+        stock_results=stock_results,
+
+        # 保留使用者輸入
+        stocks_input=stocks_input,
+
+        year=year,
+        month=month,
+
+        # 錯誤訊息
+        error=error
+    )
+
 
     # 支援多支股票
     stocks = request.args.getlist("stocks")
